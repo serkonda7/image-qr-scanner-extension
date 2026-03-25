@@ -5,6 +5,7 @@
     "build": "bun run scripts/build.ts",
     "pack": "bun run build && bun run scripts/pack.ts",
     "lint": "biome check --write",
+    "lint:ci": "biome ci",
     "check": "tsgo"
   },
   "packageManager": "bun@1.3.10",
