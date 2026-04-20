@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Image QR Scanner",
   "description": "Scan QR codes in images from the context menu.",
-  "version": "0.0.1",
+  "version": "0.0.2-dev",
   "permissions": ["contextMenus", "scripting", "activeTab", "clipboardWrite"],
   "host_permissions": ["<all_urls>"],
   "background": {
