@@ -4,7 +4,7 @@ import { CompressionLevel, zipDirectory } from 'zip-bun'
 
 const root = process.cwd()
 const dist = path.join(root, 'dist')
-const outFile = path.join(root, 'image-qr-scanner-extension.zip')
+const outFile = path.join(root, 'image-qr-scanner.zip')
 
 fs.statSync(dist)
 fs.rmSync(outFile, { force: true })
