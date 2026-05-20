@@ -32,16 +32,8 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - run: bun run pack
-      - name: Upload to Chrome Web Store
-        uses: mobilefirstllc/cws-publish@latest
-        with:
-          action: publish
-          client_id: ${{ secrets.CWS_CLIENT_ID }}
-          client_secret: ${{ secrets.CWS_SECRET }}
-          refresh_token: ${{ secrets.CWS_REFRESH }}
-          extension_id: ${{ secrets.CWS_EXTENSION_ID }}
-          zip_file: image-qr-scanner.zip
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+          files: image-qr-scanner.zip
