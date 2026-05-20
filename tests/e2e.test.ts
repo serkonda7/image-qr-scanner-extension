@@ -4,13 +4,33 @@ import os from 'node:os'
 import path from 'node:path'
 import { type BrowserContext, chromium, type Worker } from 'playwright'
 
-const EXT_PATH = path.resolve(import.meta.dir, '..', 'dist')
-const whitePngPath = path.join(import.meta.dir, '1px_white.png')
-
 let context: BrowserContext
 let sw: Worker
 let profileDir: string
 let server: ReturnType<typeof Bun.serve>
+
+const EXT_PATH = path.resolve(import.meta.dir, '..', 'dist')
+const qr_file = path.join(import.meta.dir, 'qr_webstore.jpg')
+const no_qr_file = path.join(import.meta.dir, 'no_qr.png')
+
+const test_server_options = {
+	port: 0,
+	routes: {
+		'/qr.jpg': new Response(await Bun.file(qr_file).bytes()),
+		'/no_qr.png': new Response(await Bun.file(no_qr_file).bytes()),
+		'/': async () => {
+			return new Response(
+				`<!doctype html><html><body>
+				<img id="qr" src="http://localhost:${server.port}/qr.jpg" />
+				</body></html>`,
+				{ headers: { 'content-type': 'text/html' } },
+			)
+		},
+	},
+	fetch(_req: Request) {
+		return new Response('not found', { status: 404 })
+	},
+} as Bun.Serve.Options<never, never>
 
 async function waitForServiceWorker(ctx: BrowserContext): Promise<Worker> {
 	const existing = ctx.serviceWorkers()
@@ -22,41 +42,15 @@ async function waitForServiceWorker(ctx: BrowserContext): Promise<Worker> {
 
 beforeAll(async () => {
 	// Serve the QR image over HTTP so the service worker can fetch it
-	server = Bun.serve({
-		port: 0,
-		async fetch(req) {
-			const url = new URL(req.url)
-			if (url.pathname === '/qr.jpg') {
-				const data = await fs.readFile(path.join(import.meta.dir, 'qr_webstore.jpg'))
-				return new Response(data, { headers: { 'content-type': 'image/jpeg' } })
-			}
-			if (url.pathname === '/1px_white.png') {
-				const data = await fs.readFile(whitePngPath)
-				return new Response(data, { headers: { 'content-type': 'image/png' } })
-			}
-			if (url.pathname === '/') {
-				return new Response(
-					`<!doctype html><html><body>
-					<img id="qr" src="http://localhost:${server.port}/qr.jpg" />
-					</body></html>`,
-					{ headers: { 'content-type': 'text/html' } },
-				)
-			}
-			return new Response('not found', { status: 404 })
-		},
-	})
+	server = Bun.serve(test_server_options)
 
 	// Extensions require a real user-data-dir and cannot run in headless shell
 	profileDir = await fs.mkdtemp(path.join(os.tmpdir(), 'qr-e2e-profile-'))
 
 	// Launch Chrome with the built extension loaded
 	context = await chromium.launchPersistentContext(profileDir, {
-		headless: false,
-		args: [
-			'--headless=new',
-			`--disable-extensions-except=${EXT_PATH}`,
-			`--load-extension=${EXT_PATH}`,
-		],
+		channel: 'chromium',
+		args: [`--disable-extensions-except=${EXT_PATH}`, `--load-extension=${EXT_PATH}`],
 	})
 
 	sw = await waitForServiceWorker(context)
@@ -128,7 +122,7 @@ describe('extension', () => {
 				})()
 			`)
 
-			const plainUrl = `http://localhost:${server.port}/1px_white.png`
+			const plainUrl = `http://localhost:${server.port}/no_qr.png`
 
 			await sw.evaluate(`
 				(async () => {
