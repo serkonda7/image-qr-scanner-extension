@@ -8,5 +8,5 @@
     "skipLibCheck": true,
     "types": ["chrome", "node", "bun"]
   },
-  "include": ["src", "scripts"]
+  "include": ["src", "scripts", "tests"]
 }

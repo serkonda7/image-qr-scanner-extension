@@ -14,6 +14,9 @@ async function main() {
 		target: 'browser',
 		format: 'esm',
 		minify: true,
+		define: {
+			__E2E_TEST__: JSON.stringify(process.env.E2E_TEST === '1'),
+		},
 	})
 
 	if (!result.success) {
