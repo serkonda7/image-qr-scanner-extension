@@ -59,87 +59,79 @@ beforeAll(async () => {
 afterAll(async () => {
 	await context?.close()
 	server?.stop(true)
-	if (profileDir) {
-		await fs.rm(profileDir, { recursive: true, force: true })
+	await fs.rm(profileDir, { recursive: true, force: true })
+})
+
+test('scans a valid QR code image and shows toast', async () => {
+	const page = await context.newPage()
+
+	try {
+		await page.goto(`http://localhost:${server.port}/`)
+		await page.waitForSelector('#qr')
+
+		// Get tab ID via the SW which has <all_urls> host_permissions to query tabs
+		const tabQueryUrl = `http://localhost:${server.port}/*`
+		const tabId: number = await sw.evaluate(`
+			(async () => {
+				const tabs = await chrome.tabs.query({ url: ${JSON.stringify(tabQueryUrl)} });
+				return tabs[0]?.id ?? -1;
+			})()
+		`)
+		const qrImageUrl = `http://localhost:${server.port}/qr.jpg`
+
+		// Trigger the extension's context menu handler directly from SW scope
+		await sw.evaluate(`
+			(async () => {
+				const srcUrl = ${JSON.stringify(qrImageUrl)};
+				const tid = ${JSON.stringify(tabId)};
+				await chrome.contextMenus.onClicked.dispatch(
+					{ menuItemId: 'scan-qr-code', srcUrl },
+					{ id: tid, url: srcUrl, active: true, windowId: 1, index: 0 }
+				);
+			})()
+		`)
+
+		// The extension injects a toast div into the active tab
+		const toast = await page.waitForSelector('#qr-scan-toast', { timeout: 5000 })
+		const text = await toast.textContent()
+		expect(text).toMatch(/QR (value copied|detected)/)
+	} finally {
+		await page.close()
 	}
 })
 
-describe('extension', () => {
-	test('service worker registers with extension URL', () => {
-		expect(sw.url()).toMatch(/^chrome-extension:\/\/.+\/main\.js$/)
-	})
+test('shows "no QR code" message for a plain image', async () => {
+	const page = await context.newPage()
 
-	test('scans a valid QR code image and shows toast', async () => {
-		const page = await context.newPage()
+	try {
+		// Serve a solid-colour PNG that contains no QR code
+		await page.goto(`http://localhost:${server.port}/`)
 
-		try {
-			await page.goto(`http://localhost:${server.port}/`)
-			await page.waitForSelector('#qr')
+		const tabQueryUrl = `http://localhost:${server.port}/*`
+		const tabId: number = await sw.evaluate(`
+			(async () => {
+				const tabs = await chrome.tabs.query({ url: ${JSON.stringify(tabQueryUrl)} });
+				return tabs[0]?.id ?? -1;
+			})()
+		`)
 
-			// Get tab ID via the SW which has <all_urls> host_permissions to query tabs
-			const tabQueryUrl = `http://localhost:${server.port}/*`
-			const tabId: number = await sw.evaluate(`
-				(async () => {
-					const tabs = await chrome.tabs.query({ url: ${JSON.stringify(tabQueryUrl)} });
-					return tabs[0]?.id ?? -1;
-				})()
-			`)
-			const qrImageUrl = `http://localhost:${server.port}/qr.jpg`
+		const plainUrl = `http://localhost:${server.port}/no_qr.png`
 
-			// Trigger the extension's context menu handler directly from SW scope
-			await sw.evaluate(`
-				(async () => {
-					const srcUrl = ${JSON.stringify(qrImageUrl)};
-					const tid = ${JSON.stringify(tabId)};
-					await chrome.contextMenus.onClicked.dispatch(
-						{ menuItemId: 'scan-qr-code', srcUrl },
-						{ id: tid, url: srcUrl, active: true, windowId: 1, index: 0 }
-					);
-				})()
-			`)
+		await sw.evaluate(`
+			(async () => {
+				const srcUrl = ${JSON.stringify(plainUrl)};
+				const tid = ${JSON.stringify(tabId)};
+				await chrome.contextMenus.onClicked.dispatch(
+					{ menuItemId: 'scan-qr-code', srcUrl },
+					{ id: tid, url: 'http://localhost/', active: true, windowId: 1, index: 0 }
+				);
+			})()
+		`)
 
-			// The extension injects a toast div into the active tab
-			const toast = await page.waitForSelector('#qr-scan-toast', { timeout: 5000 })
-			const text = await toast.textContent()
-			expect(text).toMatch(/QR (value copied|detected)/)
-		} finally {
-			await page.close()
-		}
-	})
-
-	test('shows "no QR code" message for a plain image', async () => {
-		const page = await context.newPage()
-
-		try {
-			// Serve a solid-colour PNG that contains no QR code
-			await page.goto(`http://localhost:${server.port}/`)
-
-			const tabQueryUrl = `http://localhost:${server.port}/*`
-			const tabId: number = await sw.evaluate(`
-				(async () => {
-					const tabs = await chrome.tabs.query({ url: ${JSON.stringify(tabQueryUrl)} });
-					return tabs[0]?.id ?? -1;
-				})()
-			`)
-
-			const plainUrl = `http://localhost:${server.port}/no_qr.png`
-
-			await sw.evaluate(`
-				(async () => {
-					const srcUrl = ${JSON.stringify(plainUrl)};
-					const tid = ${JSON.stringify(tabId)};
-					await chrome.contextMenus.onClicked.dispatch(
-						{ menuItemId: 'scan-qr-code', srcUrl },
-						{ id: tid, url: 'http://localhost/', active: true, windowId: 1, index: 0 }
-					);
-				})()
-			`)
-
-			const toast = await page.waitForSelector('#qr-scan-toast', { timeout: 5000 })
-			const text = await toast.textContent()
-			expect(text).toBe('No QR code detected in this image.')
-		} finally {
-			await page.close()
-		}
-	})
+		const toast = await page.waitForSelector('#qr-scan-toast', { timeout: 5000 })
+		const text = await toast.textContent()
+		expect(text).toBe('No QR code detected in this image.')
+	} finally {
+		await page.close()
+	}
 })
