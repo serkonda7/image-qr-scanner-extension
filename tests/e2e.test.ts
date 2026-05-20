@@ -92,13 +92,18 @@ afterAll(async () => {
 	await fs.rm(profileDir, { recursive: true, force: true })
 })
 
-test('scans a valid QR code image and shows toast', async () => {
+const EXPECTED_QR_VALUE =
+	'https://chromewebstore.google.com/detail/image-qr-scanner/moeefnhmhiflglcmjnbnoeijpinjgoop'
+
+test('scans valid QR code, shows toast, copies value', async () => {
 	const page = await context.newPage()
 
 	try {
-		await page.goto(`http://localhost:${server.port}/`)
+		const origin = `http://localhost:${server.port}`
+		await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin })
+		await page.goto(`${origin}/`)
 		await page.waitForSelector('#qr')
-		const qrImageUrl = `http://localhost:${server.port}/qr.jpg`
+		const qrImageUrl = `${origin}/qr.jpg`
 		const tabId = await getServerTabId(sw)
 		await triggerScanFromContextMenu(sw, tabId, qrImageUrl)
 
@@ -106,12 +111,15 @@ test('scans a valid QR code image and shows toast', async () => {
 		const toast = await page.waitForSelector('#qr-scan-toast', { timeout: 5000 })
 		const text = await toast.textContent()
 		expect(text).toMatch(/QR (value copied|detected)/)
+
+		const clipboard = await page.evaluate(() => navigator.clipboard.readText())
+		expect(clipboard).toBe(EXPECTED_QR_VALUE)
 	} finally {
 		await page.close()
 	}
 })
 
-test('shows "no QR code" message for a plain image', async () => {
+test('shows "no QR code" message for plain image', async () => {
 	const page = await context.newPage()
 
 	try {
