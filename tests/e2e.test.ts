@@ -41,11 +41,14 @@ async function waitForServiceWorker(ctx: BrowserContext): Promise<Worker> {
 }
 
 async function getServerTabId(worker: Worker): Promise<number> {
-	const tabQueryUrl = `http://localhost:${server.port}/*`
+	const tabQueryUrl = `http://localhost:${server.port}/`
 	return worker.evaluate(`
 		(async () => {
-			const tabs = await chrome.tabs.query({ url: ${JSON.stringify(tabQueryUrl)} });
-			return tabs[0]?.id ?? -1;
+			const tabs = await chrome.tabs.query({ url: ${JSON.stringify(tabQueryUrl)} })
+			if (tabs.length === 0) {
+				throw new Error('No tab with URL: ' + ${JSON.stringify(tabQueryUrl)})
+			}
+			return tabs[0].id
 		})()
 	`)
 }
@@ -54,7 +57,7 @@ async function triggerScanFromContextMenu(
 	worker: Worker,
 	tabId: number,
 	srcUrl: string,
-	tabUrl: string = srcUrl,
+	tabUrl: string,
 ) {
 	await worker.evaluate(`
 		(async () => {
@@ -105,7 +108,7 @@ test('scans valid QR code, shows toast, copies value', async () => {
 		await page.waitForSelector('#qr')
 		const qrImageUrl = `${origin}/qr.jpg`
 		const tabId = await getServerTabId(sw)
-		await triggerScanFromContextMenu(sw, tabId, qrImageUrl)
+		await triggerScanFromContextMenu(sw, tabId, qrImageUrl, `${origin}/`)
 
 		// The extension injects a toast div into the active tab
 		const toast = await page.waitForSelector('#qr-scan-toast', { timeout: 5000 })
