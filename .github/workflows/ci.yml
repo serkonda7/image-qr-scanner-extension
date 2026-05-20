@@ -18,3 +18,27 @@ jobs:
       - run: bun run build
       - run: bun run check
       - run: bun run lint:ci
+
+  publish:
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - run: bun run pack
+      - name: Upload to Chrome Web Store
+        uses: mobilefirstllc/cws-publish@2
+        with:
+          action: publish
+          client_id: ${{ secrets.CWS_CLIENT_ID }}
+          client_secret: ${{ secrets.CWS_SECRET }}
+          refresh_token: ${{ secrets.CWS_REFRESH }}
+          extension_id: ${{ secrets.CWS_EXTENSION_ID }}
+          zip_file: image-qr-scanner.zip
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
