@@ -20,7 +20,10 @@ chrome.runtime.onStartup.addListener(() => {
 	createContextMenu()
 })
 
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+async function handleScanRequest(
+	info: chrome.contextMenus.OnClickData,
+	tab?: chrome.tabs.Tab,
+): Promise<void> {
 	if (info.menuItemId !== MENU_ID || !info.srcUrl) {
 		return
 	}
@@ -44,7 +47,15 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 		const message = error instanceof Error ? error.message : String(error)
 		await notifyInTab(tab?.id, `QR scan failed: ${message}`, false)
 	}
+}
+
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+	await handleScanRequest(info, tab)
 })
+
+// E2E test hook: Playwright can invoke this from the extension service worker context.
+// The native context menu is in headless not supported.
+;(globalThis as { __e2eScanQr?: typeof handleScanRequest }).__e2eScanQr = handleScanRequest
 
 async function scanQrFromImageUrl(url: string): Promise<string | null> {
 	const response = await fetch(url)

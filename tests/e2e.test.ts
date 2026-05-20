@@ -58,12 +58,13 @@ async function triggerScanFromContextMenu(
 ) {
 	await worker.evaluate(`
 		(async () => {
-			const src = ${JSON.stringify(srcUrl)};
-			const tid = ${JSON.stringify(tabId)};
-			const url = ${JSON.stringify(tabUrl)};
-			await chrome.contextMenus.onClicked.dispatch(
-				{ menuItemId: 'scan-qr-code', srcUrl: src },
-				{ id: tid, url, active: true, windowId: 1, index: 0 }
+			const run = globalThis.__e2eScanQr;
+			if (typeof run !== 'function') {
+				throw new Error('__e2eScanQr test hook is unavailable');
+			}
+			await run(
+				{ menuItemId: 'scan-qr-code', srcUrl: ${JSON.stringify(srcUrl)} },
+				{ id: ${JSON.stringify(tabId)}, url: ${JSON.stringify(tabUrl)}, active: true, windowId: 1, index: 0 }
 			);
 		})()
 	`)
