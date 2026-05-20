@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { chromium, type BrowserContext, type Worker } from 'playwright'
-import path from 'node:path'
 import fs from 'node:fs/promises'
 import os from 'node:os'
+import path from 'node:path'
+import { type BrowserContext, chromium, type Worker } from 'playwright'
 
 const EXT_PATH = path.resolve(import.meta.dir, '..', 'dist')
 const whitePngPath = path.join(import.meta.dir, '1px_white.png')
@@ -14,7 +14,9 @@ let server: ReturnType<typeof Bun.serve>
 
 async function waitForServiceWorker(ctx: BrowserContext): Promise<Worker> {
 	const existing = ctx.serviceWorkers()
-	if (existing.length > 0) return existing[0]
+	if (existing.length > 0) {
+		return existing[0]
+	}
 	return ctx.waitForEvent('serviceworker', { timeout: 15000 })
 }
 
@@ -63,7 +65,9 @@ beforeAll(async () => {
 afterAll(async () => {
 	await context?.close()
 	server?.stop(true)
-	if (profileDir) await fs.rm(profileDir, { recursive: true, force: true })
+	if (profileDir) {
+		await fs.rm(profileDir, { recursive: true, force: true })
+	}
 })
 
 describe('extension', () => {
