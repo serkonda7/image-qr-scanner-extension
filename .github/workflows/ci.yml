@@ -33,7 +33,7 @@ jobs:
         run: bun install --frozen-lockfile
       - run: bun run pack
       - name: Upload to Chrome Web Store
-        uses: mobilefirstllc/cws-publish@2
+        uses: mobilefirstllc/cws-publish@latest
         with:
           action: publish
           client_id: ${{ secrets.CWS_CLIENT_ID }}
