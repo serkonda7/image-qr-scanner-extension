@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
+import { afterAll, beforeAll, expect, test } from 'bun:test'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -40,6 +40,35 @@ async function waitForServiceWorker(ctx: BrowserContext): Promise<Worker> {
 	return ctx.waitForEvent('serviceworker', { timeout: 15000 })
 }
 
+async function getServerTabId(worker: Worker): Promise<number> {
+	const tabQueryUrl = `http://localhost:${server.port}/*`
+	return worker.evaluate(`
+		(async () => {
+			const tabs = await chrome.tabs.query({ url: ${JSON.stringify(tabQueryUrl)} });
+			return tabs[0]?.id ?? -1;
+		})()
+	`)
+}
+
+async function triggerScanFromContextMenu(
+	worker: Worker,
+	tabId: number,
+	srcUrl: string,
+	tabUrl: string = srcUrl,
+) {
+	await worker.evaluate(`
+		(async () => {
+			const src = ${JSON.stringify(srcUrl)};
+			const tid = ${JSON.stringify(tabId)};
+			const url = ${JSON.stringify(tabUrl)};
+			await chrome.contextMenus.onClicked.dispatch(
+				{ menuItemId: 'scan-qr-code', srcUrl: src },
+				{ id: tid, url, active: true, windowId: 1, index: 0 }
+			);
+		})()
+	`)
+}
+
 beforeAll(async () => {
 	// Serve the QR image over HTTP so the service worker can fetch it
 	server = Bun.serve(test_server_options)
@@ -68,28 +97,9 @@ test('scans a valid QR code image and shows toast', async () => {
 	try {
 		await page.goto(`http://localhost:${server.port}/`)
 		await page.waitForSelector('#qr')
-
-		// Get tab ID via the SW which has <all_urls> host_permissions to query tabs
-		const tabQueryUrl = `http://localhost:${server.port}/*`
-		const tabId: number = await sw.evaluate(`
-			(async () => {
-				const tabs = await chrome.tabs.query({ url: ${JSON.stringify(tabQueryUrl)} });
-				return tabs[0]?.id ?? -1;
-			})()
-		`)
 		const qrImageUrl = `http://localhost:${server.port}/qr.jpg`
-
-		// Trigger the extension's context menu handler directly from SW scope
-		await sw.evaluate(`
-			(async () => {
-				const srcUrl = ${JSON.stringify(qrImageUrl)};
-				const tid = ${JSON.stringify(tabId)};
-				await chrome.contextMenus.onClicked.dispatch(
-					{ menuItemId: 'scan-qr-code', srcUrl },
-					{ id: tid, url: srcUrl, active: true, windowId: 1, index: 0 }
-				);
-			})()
-		`)
+		const tabId = await getServerTabId(sw)
+		await triggerScanFromContextMenu(sw, tabId, qrImageUrl)
 
 		// The extension injects a toast div into the active tab
 		const toast = await page.waitForSelector('#qr-scan-toast', { timeout: 5000 })
@@ -106,27 +116,9 @@ test('shows "no QR code" message for a plain image', async () => {
 	try {
 		// Serve a solid-colour PNG that contains no QR code
 		await page.goto(`http://localhost:${server.port}/`)
-
-		const tabQueryUrl = `http://localhost:${server.port}/*`
-		const tabId: number = await sw.evaluate(`
-			(async () => {
-				const tabs = await chrome.tabs.query({ url: ${JSON.stringify(tabQueryUrl)} });
-				return tabs[0]?.id ?? -1;
-			})()
-		`)
-
+		const tabId = await getServerTabId(sw)
 		const plainUrl = `http://localhost:${server.port}/no_qr.png`
-
-		await sw.evaluate(`
-			(async () => {
-				const srcUrl = ${JSON.stringify(plainUrl)};
-				const tid = ${JSON.stringify(tabId)};
-				await chrome.contextMenus.onClicked.dispatch(
-					{ menuItemId: 'scan-qr-code', srcUrl },
-					{ id: tid, url: 'http://localhost/', active: true, windowId: 1, index: 0 }
-				);
-			})()
-		`)
+		await triggerScanFromContextMenu(sw, tabId, plainUrl, 'http://localhost/')
 
 		const toast = await page.waitForSelector('#qr-scan-toast', { timeout: 5000 })
 		const text = await toast.textContent()
