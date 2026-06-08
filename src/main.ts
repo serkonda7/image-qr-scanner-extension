@@ -33,20 +33,20 @@ async function handleScanRequest(
 		const qrValue = await scanQrFromImageUrl(info.srcUrl)
 
 		if (!qrValue) {
-			await notifyInTab(tab?.id, 'No QR code detected in this image.', false)
+			await notifyInTab(tab?.id, 'No QR code detected in this image.', false, info.srcUrl)
 			return
 		}
 
 		const copyResult = await copyToClipboardInTab(tab?.id, qrValue)
 
 		if (copyResult?.ok) {
-			await notifyInTab(tab?.id, 'QR value copied to clipboard.', true)
+			await notifyInTab(tab?.id, 'QR value copied to clipboard.', true, info.srcUrl)
 		} else {
-			await notifyInTab(tab?.id, `QR detected: ${qrValue}`, false)
+			await notifyInTab(tab?.id, `QR detected: ${qrValue}`, false, info.srcUrl)
 		}
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error)
-		await notifyInTab(tab?.id, `QR scan failed: ${message}`, false)
+		await notifyInTab(tab?.id, `QR scan failed: ${message}`, false, info.srcUrl)
 	}
 }
 
