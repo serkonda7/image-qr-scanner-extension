@@ -20,14 +20,11 @@ chrome.runtime.onInstalled.addListener(() => {
 	createContextMenu()
 })
 
-chrome.runtime.onStartup.addListener(() => {
-	createContextMenu()
-})
-
 async function handleScanRequest(
 	info: chrome.contextMenus.OnClickData,
 	tab?: chrome.tabs.Tab,
 ): Promise<void> {
+	// Return if another menu item was clicked
 	if (info.menuItemId !== MENU_ID || !info.srcUrl) {
 		return
 	}
@@ -53,6 +50,7 @@ async function handleScanRequest(
 	}
 }
 
+// Register context menu click listener
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 	await handleScanRequest(info, tab)
 })
