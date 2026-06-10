@@ -8,17 +8,19 @@ function show_notification(text: string, ok: boolean, srcUrl?: string) {
 	const toast = document.createElement('div')
 	toast.id = 'qr-scan-toast'
 	toast.textContent = text
-	toast.style.position = 'fixed'
-	toast.style.zIndex = '2147483647'
-	toast.style.maxWidth = '360px'
-	toast.style.padding = '10px 14px'
-	toast.style.borderRadius = '8px'
-	toast.style.fontFamily = 'system-ui, sans-serif'
-	toast.style.fontSize = '13px'
-	toast.style.lineHeight = '1.35'
-	toast.style.color = '#fff'
-	toast.style.background = ok ? '#0f7b0f' : '#a03a00'
-	toast.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.35)'
+	toast.style.cssText = `
+		position: fixed;
+		z-index: 2147483647;
+		max-width: 360px;
+		padding: 10px 14px;
+		border-radius: 8px;
+		font-family: system-ui, sans-serif;
+		font-size: 13px;
+		line-height: 1.35;
+		color: #fff;
+		background: ${ok ? '#0f7b0f' : '#a03a00'};
+		box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+	`
 
 	let positioned = false
 	if (srcUrl) {
@@ -27,6 +29,7 @@ function show_notification(text: string, ok: boolean, srcUrl?: string) {
 			const rect = img.getBoundingClientRect()
 			const top = Math.max(16, Math.min(window.innerHeight - 80, rect.top + 8))
 			const left = Math.max(16, Math.min(window.innerWidth - 380, rect.left + 8))
+
 			toast.style.left = `${left}px`
 			toast.style.top = `${top}px`
 			positioned = true
