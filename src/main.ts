@@ -1,6 +1,6 @@
 import { copyToClipboardInTab } from './copy'
 import { Notifier } from './notify'
-import { scanQrFromImageUrl } from './qr'
+import { scan_qr_from_url } from './qr'
 
 declare const __E2E_TEST__: boolean
 
@@ -32,7 +32,7 @@ async function handleScanRequest(
 	const notifier = new Notifier(tab?.id, info.srcUrl)
 
 	try {
-		const qrValue = await scanQrFromImageUrl(info.srcUrl)
+		const qrValue = await scan_qr_from_url(info.srcUrl)
 
 		if (!qrValue) {
 			await notifier.notify('No QR code detected in this image.', false)

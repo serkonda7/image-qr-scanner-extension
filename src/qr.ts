@@ -4,7 +4,7 @@ import jsQR from 'jsqr'
 // QR codes stay scannable well below this.
 const MAX_DIMENSION = 1024
 
-async function fetchImageBlob(url: string): Promise<Blob> {
+async function fetch_blob(url: string): Promise<Blob> {
 	const response = await fetch(url)
 	if (!response.ok) {
 		throw new Error(`Image download failed (${response.status})`)
@@ -12,7 +12,7 @@ async function fetchImageBlob(url: string): Promise<Blob> {
 	return response.blob()
 }
 
-function renderBitmapToImageData(bitmap: ImageBitmap): ImageData {
+function bitmap_to_image_data(bitmap: ImageBitmap): ImageData {
 	const scale = Math.min(1, MAX_DIMENSION / Math.max(bitmap.width, bitmap.height))
 	const width = Math.max(1, Math.round(bitmap.width * scale))
 	const height = Math.max(1, Math.round(bitmap.height * scale))
@@ -28,20 +28,20 @@ function renderBitmapToImageData(bitmap: ImageBitmap): ImageData {
 	return context.getImageData(0, 0, width, height)
 }
 
-function decodeQr(imageData: ImageData): string | null {
+function decode_qr(imageData: ImageData): string | null {
 	const decoded = jsQR(imageData.data, imageData.width, imageData.height, {
 		inversionAttempts: 'attemptBoth',
 	})
 	return decoded?.data ?? null
 }
 
-export async function scanQrFromImageUrl(url: string): Promise<string | null> {
-	const blob = await fetchImageBlob(url)
+export async function scan_qr_from_url(url: string): Promise<string | null> {
+	const blob = await fetch_blob(url)
 	const bitmap = await createImageBitmap(blob)
 
 	try {
-		const imageData = renderBitmapToImageData(bitmap)
-		return decodeQr(imageData)
+		const imageData = bitmap_to_image_data(bitmap)
+		return decode_qr(imageData)
 	} finally {
 		bitmap.close()
 	}
