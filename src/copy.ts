@@ -1,13 +1,13 @@
+// Custom Result type as it runs in injected script context
 export type ClipboardResult = { ok: true } | { ok: false; reason: string }
 
-// Runs in the injected page context. Tries the async Clipboard API first and
-// falls back to a hidden textarea + execCommand for older or restricted pages.
-async function writeToClipboard(value: string): Promise<ClipboardResult> {
+// Copy using the async Clipboard API first or execCommand fallback.
+async function write_to_clipboard(value: string): Promise<ClipboardResult> {
 	try {
 		await navigator.clipboard.writeText(value)
 		return { ok: true }
 	} catch {
-		// Fallback to deprecated `execCommand` using a hidden textarea
+		// Fallback: deprecated `execCommand` and a hidden textarea
 		const textArea = document.createElement('textarea')
 		textArea.value = value
 		textArea.setAttribute('readonly', '')
@@ -32,7 +32,7 @@ export async function copyToClipboardInTab(
 	try {
 		const [result] = await chrome.scripting.executeScript({
 			target: { tabId },
-			func: writeToClipboard,
+			func: write_to_clipboard,
 			args: [text],
 		})
 
