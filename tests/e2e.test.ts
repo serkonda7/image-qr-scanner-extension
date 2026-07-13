@@ -10,18 +10,18 @@ let profileDir: string
 let server: ReturnType<typeof Bun.serve>
 
 const EXT_PATH = path.resolve(import.meta.dir, '..', 'dist')
-const qr_file = path.join(import.meta.dir, 'qr_webstore.jpg')
+const qr_file = path.join(import.meta.dir, 'qr_webstore.png')
 const no_qr_file = path.join(import.meta.dir, 'no_qr.png')
 
 const test_server_options = {
 	port: 0,
 	routes: {
-		'/qr.jpg': new Response(await Bun.file(qr_file).bytes()),
+		'/qr.png': new Response(await Bun.file(qr_file).bytes()),
 		'/no_qr.png': new Response(await Bun.file(no_qr_file).bytes()),
 		'/': async () => {
 			return new Response(
 				`<!doctype html><html><body>
-				<img id="qr" src="http://localhost:${server.port}/qr.jpg" />
+				<img id="qr" src="http://localhost:${server.port}/qr.png" />
 				</body></html>`,
 				{ headers: { 'content-type': 'text/html' } },
 			)
@@ -106,7 +106,7 @@ test('scans valid QR code, shows toast, copies value', async () => {
 		await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin })
 		await page.goto(`${origin}/`)
 		await page.waitForSelector('#qr')
-		const qrImageUrl = `${origin}/qr.jpg`
+		const qrImageUrl = `${origin}/qr.png`
 		const tabId = await getServerTabId(sw)
 		await triggerScanFromContextMenu(sw, tabId, qrImageUrl, `${origin}/`)
 
