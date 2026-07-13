@@ -1,14 +1,15 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { CompressionLevel, zipDirectory } from 'zip-bun'
+import { zipDirectory } from 'zip-bun'
 
+const OUT_FILE = 'image-qr-scanner.zip'
 const root = process.cwd()
 const dist = path.join(root, 'dist')
-const outFile = path.join(root, 'image-qr-scanner.zip')
+const outFile = path.join(root, OUT_FILE)
 
-fs.statSync(dist)
+// Clean up previous build artifacts
 fs.rmSync(outFile, { force: true })
 
-await zipDirectory(dist, outFile, CompressionLevel.DEFAULT)
-
-console.log(`Created ${path.relative(root, outFile)} from ${path.relative(root, dist)}.`)
+// Zip the dist directory
+await zipDirectory(dist, outFile)
+console.log(`Packed dist/ into ${OUT_FILE}`)
