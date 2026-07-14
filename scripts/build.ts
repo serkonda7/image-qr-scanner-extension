@@ -4,32 +4,33 @@ import path from 'node:path'
 const root = process.cwd()
 const dist = path.join(root, 'dist')
 
-async function main() {
-	fs.rmSync(dist, { recursive: true, force: true })
-	fs.mkdirSync(dist, { recursive: true })
+const STATIC_FILES = ['manifest.json', 'LICENSE.txt', 'README.md'] as const
+const ENTRY = path.join(root, 'src', 'main.ts')
 
-	const result = await Bun.build({
-		entrypoints: [path.join(root, 'src', 'main.ts')],
-		outdir: dist,
-		target: 'browser',
-		format: 'esm',
-		minify: true,
-		define: {
-			__E2E_TEST__: JSON.stringify(process.env.E2E_TEST === '1'),
-		},
-	})
+fs.rmSync(dist, { recursive: true, force: true })
+fs.mkdirSync(dist, { recursive: true })
 
-	if (!result.success) {
-		for (const message of result.logs) {
-			console.error(message)
-		}
-		process.exit(1)
+// Build with Bun
+const result = await Bun.build({
+	entrypoints: [ENTRY],
+	outdir: dist,
+	target: 'browser',
+	format: 'esm',
+	minify: true,
+	define: {
+		__E2E_TEST__: JSON.stringify(process.env.E2E_TEST === '1'),
+	},
+})
+
+// Show error if build failed
+if (!result.success) {
+	for (const message of result.logs) {
+		console.error(message)
 	}
-
-	const staticFiles = ['manifest.json', 'LICENSE.txt', 'README.md']
-	for (const file of staticFiles) {
-		fs.cpSync(path.join(root, file), path.join(dist, file))
-	}
+	process.exit(1)
 }
 
-await main()
+// Copy static files to dist
+for (const file of STATIC_FILES) {
+	fs.cpSync(path.join(root, file), path.join(dist, file))
+}
