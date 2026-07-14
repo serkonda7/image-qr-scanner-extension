@@ -12,7 +12,9 @@ async function fetch_blob(url: string): Promise<Blob> {
 	return response.blob()
 }
 
-function bitmap_to_image_data(bitmap: ImageBitmap): ImageData {
+function scale_bitmap_to_image_data(bitmap: ImageBitmap): ImageData {
+	// Scale down the bitmap to reduce memory usage.
+	// QR codes are still scannable at smaller sizes.
 	const scale = Math.min(1, MAX_DIMENSION / Math.max(bitmap.width, bitmap.height))
 	const width = Math.max(1, Math.round(bitmap.width * scale))
 	const height = Math.max(1, Math.round(bitmap.height * scale))
@@ -40,7 +42,7 @@ export async function scan_qr_from_url(url: string): Promise<string | null> {
 	const bitmap = await createImageBitmap(blob)
 
 	try {
-		const imageData = bitmap_to_image_data(bitmap)
+		const imageData = scale_bitmap_to_image_data(bitmap)
 		return decode_qr(imageData)
 	} finally {
 		bitmap.close()

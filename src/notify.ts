@@ -1,6 +1,7 @@
+type QrScanWindow = Window & { __qrScanCleanup?: () => void }
+
 function show_notification(text: string, ok: boolean, srcUrl?: string) {
-	// biome-ignore lint/suspicious/noExplicitAny: needed for dynamic window properties in scripting context
-	const win = window as any
+	const win = window as QrScanWindow
 	if (typeof win.__qrScanCleanup === 'function') {
 		win.__qrScanCleanup()
 	}

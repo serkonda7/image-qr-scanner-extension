@@ -130,7 +130,7 @@ test('shows "no QR code" message for plain image', async () => {
 		await page.goto(`http://localhost:${server.port}/`)
 		const tabId = await getServerTabId(sw)
 		const plainUrl = `http://localhost:${server.port}/no_qr.png`
-		await triggerScanFromContextMenu(sw, tabId, plainUrl, 'http://localhost/')
+		await triggerScanFromContextMenu(sw, tabId, plainUrl, `http://localhost:${server.port}/`)
 
 		const toast = await page.waitForSelector('#qr-scan-toast', { timeout: 5000 })
 		const text = await toast.textContent()

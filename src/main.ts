@@ -16,9 +16,7 @@ function createContextMenu(): void {
 	})
 }
 
-chrome.runtime.onInstalled.addListener(() => {
-	createContextMenu()
-})
+chrome.runtime.onInstalled.addListener(createContextMenu)
 
 async function handleScanRequest(
 	info: chrome.contextMenus.OnClickData,
