@@ -11,7 +11,7 @@ function createContextMenu(): void {
 		chrome.contextMenus.create({
 			id: MENU_ID,
 			title: 'Scan QR code',
-			contexts: ['image'],
+			contexts: ['image', 'page'],
 		})
 	})
 }

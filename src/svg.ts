@@ -39,8 +39,12 @@ async function rasterizeSvg(svg: SVGSVGElement): Promise<string> {
 }
 
 chrome.runtime.onMessage.addListener((message: unknown) => {
+	if (message === 'has-context-svg') {
+		return { hasSvg: contextSvg !== null }
+	}
+
 	if (message !== 'get-context-svg') {
-		return
+		return undefined
 	}
 
 	if (!contextSvg) {
