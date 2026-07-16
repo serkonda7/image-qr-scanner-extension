@@ -11,26 +11,44 @@ function createContextMenu(): void {
 		chrome.contextMenus.create({
 			id: MENU_ID,
 			title: 'Scan QR code',
-			contexts: ['image'],
+			contexts: ['image', 'page'],
 		})
 	})
 }
 
 chrome.runtime.onInstalled.addListener(createContextMenu)
 
+async function getContextSvgUrl(tabId: number | undefined): Promise<string | null> {
+	if (!tabId) {
+		return null
+	}
+
+	try {
+		const response = await chrome.tabs.sendMessage(tabId, 'get-context-svg')
+		return typeof response?.url === 'string' ? response.url : null
+	} catch {
+		return null
+	}
+}
+
 async function handleScanRequest(
 	info: chrome.contextMenus.OnClickData,
 	tab?: chrome.tabs.Tab,
 ): Promise<void> {
 	// Return if another menu item was clicked
-	if (info.menuItemId !== MENU_ID || !info.srcUrl) {
+	if (info.menuItemId !== MENU_ID) {
 		return
 	}
 
-	const notifier = new Notifier(tab?.id, info.srcUrl)
+	const imageUrl = info.srcUrl ?? (await getContextSvgUrl(tab?.id))
+	if (!imageUrl) {
+		return
+	}
+
+	const notifier = new Notifier(tab?.id, imageUrl)
 
 	try {
-		const qrValue = await scan_qr_from_url(info.srcUrl)
+		const qrValue = await scan_qr_from_url(imageUrl)
 
 		if (!qrValue) {
 			await notifier.notify('No QR code detected in this image.', false)

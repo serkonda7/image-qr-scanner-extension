@@ -5,14 +5,14 @@ const root = process.cwd()
 const dist = path.join(root, 'dist')
 
 const STATIC_FILES = ['manifest.json', 'LICENSE.txt', 'README.md'] as const
-const ENTRY = path.join(root, 'src', 'main.ts')
+const ENTRYPOINTS = [path.join(root, 'src', 'main.ts'), path.join(root, 'src', 'svg.ts')]
 
 fs.rmSync(dist, { recursive: true, force: true })
 fs.mkdirSync(dist, { recursive: true })
 
 // Build with Bun
 const result = await Bun.build({
-	entrypoints: [ENTRY],
+	entrypoints: ENTRYPOINTS,
 	outdir: dist,
 	target: 'browser',
 	format: 'esm',
