@@ -12,6 +12,8 @@ let server: ReturnType<typeof Bun.serve>
 const EXT_PATH = path.resolve(import.meta.dir, '..', 'dist')
 const qr_file = path.join(import.meta.dir, 'qr_webstore.png')
 const no_qr_file = path.join(import.meta.dir, 'no_qr.png')
+const svg_fixture_file = path.join(import.meta.dir, 'svg_element.html')
+const svg_fixture_markup = await Bun.file(svg_fixture_file).text()
 
 const test_server_options = {
 	port: 0,
@@ -22,6 +24,7 @@ const test_server_options = {
 			return new Response(
 				`<!doctype html><html><body>
 				<img id="qr" src="http://localhost:${server.port}/qr.png" />
+				${svg_fixture_markup}
 				</body></html>`,
 				{ headers: { 'content-type': 'text/html' } },
 			)
@@ -56,7 +59,7 @@ async function getServerTabId(worker: Worker): Promise<number> {
 async function triggerScanFromContextMenu(
 	worker: Worker,
 	tabId: number,
-	srcUrl: string,
+	srcUrl: string | undefined,
 	tabUrl: string,
 ) {
 	await worker.evaluate(`
@@ -97,6 +100,7 @@ afterAll(async () => {
 
 const EXPECTED_QR_VALUE =
 	'https://chromewebstore.google.com/detail/image-qr-scanner/moeefnhmhiflglcmjnbnoeijpinjgoop'
+const EXPECTED_SVG_VALUE = '0123456789ABCDEF'
 
 test('scans valid QR code, shows toast, copies value', async () => {
 	const page = await context.newPage()
@@ -117,6 +121,26 @@ test('scans valid QR code, shows toast, copies value', async () => {
 
 		const clipboard = await page.evaluate(() => navigator.clipboard.readText())
 		expect(clipboard).toBe(EXPECTED_QR_VALUE)
+	} finally {
+		await page.close()
+	}
+})
+
+test('scans QR code from an inline SVG element', async () => {
+	const page = await context.newPage()
+
+	try {
+		const origin = `http://localhost:${server.port}`
+		await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin })
+		await page.goto(`${origin}/`)
+		await page.waitForSelector('svg')
+		await page.click('svg', { button: 'right' })
+		const tabId = await getServerTabId(sw)
+		await triggerScanFromContextMenu(sw, tabId, undefined, `${origin}/`)
+
+		const toast = await page.waitForSelector('#qr-scan-toast', { timeout: 5000 })
+		expect(await toast.textContent()).toMatch(/QR (value copied|detected)/)
+		expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(EXPECTED_SVG_VALUE)
 	} finally {
 		await page.close()
 	}
