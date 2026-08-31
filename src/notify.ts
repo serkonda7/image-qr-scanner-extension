@@ -67,25 +67,36 @@ export class Notifier {
 		private imageUrl?: string,
 	) {}
 
-	private async fallbackSystemNotification(message: string, success: boolean): Promise<void> {
+	private async fallbackSystemNotification(value: string): Promise<void> {
 		try {
-			// Requires "notifications" permission; best-effort fallback when in-page toast cannot be injected
-			// (e.g. PDF viewer without a writable DOM, chrome:// pages)
-			await chrome.notifications.create({
+			const id = await chrome.notifications.create({
 				type: 'basic',
 				iconUrl: 'img/icon.png',
-				title: success ? 'QR code scanned' : 'QR scanner',
-				message,
-				priority: success ? 2 : 1,
+				title: 'Value copied',
+				message: value,
 			})
+			if (typeof id === 'string' && id) {
+				setTimeout(() => {
+					chrome.notifications.clear(id).catch(() => {})
+				}, 15_000)
+			}
 		} catch {
-			console.log(message)
+			console.log(value)
 		}
+	}
+
+	private extractValue(message: string): string {
+		const prefix = 'QR value copied to clipboard: '
+		return message.startsWith(prefix) ? message.slice(prefix.length) : message
 	}
 
 	async notify(message: string, success: boolean): Promise<void> {
 		if (!this.tabId) {
-			await this.fallbackSystemNotification(message, success)
+			if (success) {
+				await this.fallbackSystemNotification(this.extractValue(message))
+			} else {
+				console.log(message)
+			}
 			return
 		}
 
@@ -98,10 +109,14 @@ export class Notifier {
 			// Also fire a system notification on success so it is visible even if the toast is
 			// obscured (PDF viewer) or the tab is in background
 			if (success) {
-				await this.fallbackSystemNotification(message, success)
+				await this.fallbackSystemNotification(this.extractValue(message))
 			}
 		} catch {
-			await this.fallbackSystemNotification(message, success)
+			if (success) {
+				await this.fallbackSystemNotification(this.extractValue(message))
+			} else {
+				console.log(message)
+			}
 		}
 	}
 }
