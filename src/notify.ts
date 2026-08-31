@@ -21,6 +21,8 @@ function show_notification(text: string, ok: boolean, srcUrl?: string) {
 		color: #fff;
 		background: ${ok ? '#0f7b0f' : '#a03a00'};
 		box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+		word-break: break-all;
+		white-space: pre-wrap;
 	`
 
 	let positioned = false
@@ -42,7 +44,8 @@ function show_notification(text: string, ok: boolean, srcUrl?: string) {
 		toast.style.bottom = '16px'
 	}
 
-	document.body.appendChild(toast)
+	const container = document.body ?? document.documentElement
+	container.appendChild(toast)
 
 	const cleanup = () => {
 		toast.remove()
@@ -54,7 +57,8 @@ function show_notification(text: string, ok: boolean, srcUrl?: string) {
 
 	win.__qrScanCleanup = cleanup
 	window.addEventListener('scroll', cleanup)
-	setTimeout(cleanup, 3200)
+	// Keep successful copy visible longer so the user can see the value
+	setTimeout(cleanup, ok ? 6000 : 3200)
 }
 
 export class Notifier {
@@ -63,9 +67,25 @@ export class Notifier {
 		private imageUrl?: string,
 	) {}
 
+	private async fallbackSystemNotification(message: string, success: boolean): Promise<void> {
+		try {
+			// Requires "notifications" permission; best-effort fallback when in-page toast cannot be injected
+			// (e.g. PDF viewer without a writable DOM, chrome:// pages)
+			await chrome.notifications.create({
+				type: 'basic',
+				iconUrl: 'img/icon.png',
+				title: success ? 'QR code scanned' : 'QR scanner',
+				message,
+				priority: success ? 2 : 1,
+			})
+		} catch {
+			console.log(message)
+		}
+	}
+
 	async notify(message: string, success: boolean): Promise<void> {
 		if (!this.tabId) {
-			console.log(message)
+			await this.fallbackSystemNotification(message, success)
 			return
 		}
 
@@ -75,8 +95,13 @@ export class Notifier {
 				func: show_notification,
 				args: [message, success, this.imageUrl],
 			})
+			// Also fire a system notification on success so it is visible even if the toast is
+			// obscured (PDF viewer) or the tab is in background
+			if (success) {
+				await this.fallbackSystemNotification(message, success)
+			}
 		} catch {
-			console.log(message)
+			await this.fallbackSystemNotification(message, success)
 		}
 	}
 }

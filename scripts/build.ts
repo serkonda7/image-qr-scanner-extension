@@ -38,3 +38,7 @@ if (!result.success) {
 for (const file of STATIC_FILES) {
 	fs.cpSync(path.join(root, file), path.join(dist, file))
 }
+
+// Copy icon for notifications (chrome.notifications requires iconUrl to exist in dist)
+fs.mkdirSync(path.join(dist, 'img'), { recursive: true })
+fs.cpSync(path.join(root, 'img', 'icon.png'), path.join(dist, 'img', 'icon.png'))

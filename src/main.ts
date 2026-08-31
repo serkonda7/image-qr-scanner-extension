@@ -58,7 +58,7 @@ async function handleScanRequest(
 		const copyResult = await copyToClipboardInTab(tab?.id, qrValue)
 
 		if (copyResult?.ok) {
-			await notifier.notify('QR value copied to clipboard.', true)
+			await notifier.notify(`QR value copied to clipboard: ${qrValue}`, true)
 		} else {
 			await notifier.notify(`QR detected: ${qrValue}`, false)
 		}
@@ -88,7 +88,7 @@ async function handleRegionScan(tabId: number, rect: QrRect, dpr: number): Promi
 		const copyResult = await copyToClipboardInTab(tabId, qrValue)
 
 		if (copyResult?.ok) {
-			await notifier.notify('QR value copied to clipboard.', true)
+			await notifier.notify(`QR value copied to clipboard: ${qrValue}`, true)
 		} else {
 			await notifier.notify(`QR detected: ${qrValue}`, false)
 		}
