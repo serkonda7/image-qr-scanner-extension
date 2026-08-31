@@ -5,7 +5,11 @@ const root = process.cwd()
 const dist = path.join(root, 'dist')
 
 const STATIC_FILES = ['manifest.json', 'LICENSE.txt', 'README.md'] as const
-const ENTRYPOINTS = [path.join(root, 'src', 'main.ts'), path.join(root, 'src', 'svg.ts')]
+const ENTRYPOINTS = [
+	path.join(root, 'src', 'main.ts'),
+	path.join(root, 'src', 'svg.ts'),
+	path.join(root, 'src', 'overlay.ts'),
+]
 
 fs.rmSync(dist, { recursive: true, force: true })
 fs.mkdirSync(dist, { recursive: true })

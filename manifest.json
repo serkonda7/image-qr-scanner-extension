@@ -5,6 +5,9 @@
   "version": "0.1.0",
   "permissions": ["contextMenus", "scripting", "activeTab", "clipboardWrite"],
   "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_title": "Select region to scan QR code"
+  },
   "background": {
     "service_worker": "main.js",
     "type": "module"
