@@ -5,7 +5,11 @@ const root = process.cwd()
 const dist = path.join(root, 'dist')
 
 const STATIC_FILES = ['manifest.json', 'LICENSE.txt', 'README.md'] as const
-const ENTRYPOINTS = [path.join(root, 'src', 'main.ts'), path.join(root, 'src', 'svg.ts')]
+const ENTRYPOINTS = [
+	path.join(root, 'src', 'main.ts'),
+	path.join(root, 'src', 'svg.ts'),
+	path.join(root, 'src', 'overlay.ts'),
+]
 
 fs.rmSync(dist, { recursive: true, force: true })
 fs.mkdirSync(dist, { recursive: true })
@@ -34,3 +38,7 @@ if (!result.success) {
 for (const file of STATIC_FILES) {
 	fs.cpSync(path.join(root, file), path.join(dist, file))
 }
+
+// Copy icon for notifications (chrome.notifications requires iconUrl to exist in dist)
+fs.mkdirSync(path.join(dist, 'img'), { recursive: true })
+fs.cpSync(path.join(root, 'img', 'icon.png'), path.join(dist, 'img', 'icon.png'))
